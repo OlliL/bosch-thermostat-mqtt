@@ -1,0 +1,20 @@
+[project]
+name = "bosch-thermostat-mqtt"
+version = "0.0.1"
+description = "Publish BoschTM Heating gateway measurements to MQTT"
+authors = [
+    {name = "Oliver Lehmann", email = "lehmann@ans-netz.de"},
+]
+dependencies = [
+    "bosch-thermostat-client>=0.20.0",
+]
+requires-python = ">=3.10"
+license = {text = "Apache License 2.0"}
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[project.scripts]
+bosch_mqtt= "bosch_mqtt:cli"
+
