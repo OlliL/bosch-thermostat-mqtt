@@ -1,7 +1,9 @@
 # bosch-thermostat-mqtt
 
 A MQTT Client connecting to your Bosch Thermostat API, collecting measurments and publishing them as MQTT Messages. Use either the `scan` or `query` mode. The script can be started as a daemon if you like.
-The Client is inspired and based on [bosch-thermostat-client-python](https://github.com/bosch-thermostat/bosch-thermostat-client-python).
+
+
+This Client is inspired and based on [bosch-thermostat-client-python](https://github.com/bosch-thermostat/bosch-thermostat-client-python).
 
 ## Usage
 
