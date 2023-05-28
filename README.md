@@ -4,72 +4,52 @@ A MQTT Client connecting to your Bosch Thermostat API, collecting measurments an
 
 ## Usage
 
-### query
+The easiest way to use this MQTT Client is to create a configuration file containing all the Bosch and MQTT parameters. It might also not be reasonable to scan all Bosch endpoints and publish them all via MQTT. Said that you can also add specific endpoints to query and publish via MQTT.
+
+Example of a config.yml:
 ```
-Usage: bosch_mqtt query [OPTIONS]
-
-  Query values of Bosch thermostat.
-
-Options:
-  --config PATH                   Read configuration from PATH.  [default:
-                                  config.yml]
-  --host TEXT                     IP address of gateway or SERIAL for XMPP
-                                  [required]
-  --token TEXT                    Token from sticker without dashes.
-                                  [required]
-  --password TEXT                 Password you set in mobile app.
-  --protocol [XMPP|HTTP]          Bosch protocol. Either XMPP or HTTP.
-                                  [required]
-  --device [NEFIT|IVT|EASYCONTROL]
-                                  Bosch device type. NEFIT, IVT or
-                                  EASYCONTROL.  [required]
-  -d, --debug                     Set Debug mode. Single debug is debug of
-                                  this lib. Second d is debug of aioxmpp as
-                                  well.
-  -p, --path TEXT                 Path to run against. Look at rawscan at
-                                  possible paths. e.g. /gateway/uuid - Can be
-                                  specified multiple times!  [required]
-  --daemon                        Start as daemon.
-  --interval INTEGER              Specify polling interval in seconds when
-                                  started as daemon.  [default: 300]
-  --mqtt-host TEXT                Adress of MQTT host.  [required]
-  --mqtt-port INTEGER             Port of MQTT host.  [default: 1883]
-  --mqtt-username TEXT            Username for MQTT connect.
-  --mqtt-password TEXT            Password for MQTT connect.
-  --help                          Show this message and exit.
+token: your-bosch-token
+password: your-bosch-password
+host: ip-adress-of-your-bosch-thermostat
+protocol: HTTP
+device: IVT
+path:
+  - /system/sensors/temperatures/outdoor_t1
+  - /system/sensors/temperatures/supply_t1
+  - /system/sensors/temperatures/return
+  - /heatSources/actualPower
+  - /system/appliance/actualSupplyTemperature
+  - /heatSources/actualModulation
+  - /heatSources/CHpumpModulation
+  - /heatSources/energyMonitoring/consumption
+  - /heatSources/systemPressure
+  - /dhwCircuits/dhw1/actualTemp
+  - /heatingCircuits/hc1/roomtemperature
+mqtt_host: ip-adress-of-your-mqtt-server
+mqtt_username: your-mqtt-user
+mqtt_password: your-mqtt-password
 ```
 
-### scan
+By default the MQTT Client will pick up the config.yml in your current directory. You can also specify its location by using the --config option.
+
+You can now start bosch-mqtt as a daemon if you like:
 
 ```
-Usage: bosch_mqtt scan [OPTIONS]
-
-  Create rawscan of Bosch thermostat.
-
-Options:
-  --config PATH                   Read configuration from PATH.  [default:
-                                  config.yml]
-  --host TEXT                     IP address of gateway or SERIAL for XMPP
-                                  [required]
-  --token TEXT                    Token from sticker without dashes.
-                                  [required]
-  --password TEXT                 Password you set in mobile app.
-  --protocol [XMPP|HTTP]          Bosch protocol. Either XMPP or HTTP.
-                                  [required]
-  --device [NEFIT|IVT|EASYCONTROL]
-                                  Bosch device type. NEFIT, IVT or
-                                  EASYCONTROL.  [required]
-  -d, --debug                     Set Debug mode. Single debug is debug of
-                                  this lib. Second d is debug of aioxmpp as
-                                  well.
-  -s, --smallscan [HC|DHW|SENSORS|RECORDINGS]
-                                  Scan only single circuit of thermostat.
-  --daemon                        Start as daemon.
-  --interval INTEGER              Specify polling interval in seconds when
-                                  started as daemon.  [default: 300]
-  --mqtt-host TEXT                Adress of MQTT host.  [required]
-  --mqtt-port INTEGER             Port of MQTT host.  [default: 1883]
-  --mqtt-username TEXT            Username for MQTT connect.
-  --mqtt-password TEXT            Password for MQTT connect.
-  --help                          Show this message and exit.
+# bosch_mqtt.py query --daemon
+2023-05-28 13:42:21 INFO (MainThread) [__main__] Connecting to 10.0.2.71 with 'HTTP'
+2023-05-28 13:42:22 INFO (MainThread) [__main__] Successfully connected to gateway. Found UUID: <your-UUID>
+2023-05-28 13:42:22 INFO (MainThread) [__main__] Executing as daemon, interval is 300 seconds.
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Successfully connected to MQTT broker.
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/system/sensors/temperatures/outdoor_t1
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/system/sensors/temperatures/supply_t1
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/system/sensors/temperatures/return
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/heatSources/actualPower
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/system/appliance/actualSupplyTemperature
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/heatSources/actualModulation
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/heatSources/CHpumpModulation
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/heatSources/energyMonitoring/consumption
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/heatSources/systemPressure
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/dhwCircuits/dhw1/actualTemp
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/heatingCircuits/hc1/roomtemperature
+2023-05-28 13:42:23 INFO (MainThread) [__main__] Sleeping 300 seconds...
 ```
