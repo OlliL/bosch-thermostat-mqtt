@@ -6,6 +6,8 @@ A MQTT Client connecting to your Bosch Thermostat API, collecting measurments an
 
 The easiest way to use this MQTT Client is to create a configuration file containing all the Bosch and MQTT parameters. It might also not be reasonable to scan all Bosch endpoints and publish them all via MQTT. Said that you can also add specific endpoints to query and publish via MQTT.
 
+### Configuration
+
 Example of a config.yml:
 ```
 token: your-bosch-token
@@ -32,6 +34,7 @@ mqtt_password: your-mqtt-password
 
 By default the MQTT Client will pick up the config.yml in your current directory. You can also specify its location by using the --config option.
 
+### Start
 You can now start bosch-mqtt as a daemon if you like:
 
 ```
@@ -53,3 +56,7 @@ You can now start bosch-mqtt as a daemon if you like:
 2023-05-28 13:42:23 INFO (MainThread) [__main__] Publishing bosch/RC300-<your-UUID>/heatingCircuits/hc1/roomtemperature
 2023-05-28 13:42:23 INFO (MainThread) [__main__] Sleeping 300 seconds...
 ```
+
+### MQTT-Explorer
+
+![grafik](https://github.com/OlliL/bosch-thermostat-mqtt/assets/4688427/882791f0-5f92-4b8b-a2ec-ac4a9934b4c5)
