@@ -89,15 +89,16 @@ def mqtt_connect():
 def mqtt_publish(gateway, result):
     client = mqtt_connect()
 
-    for res in result:
-        if type(res) == list:
-            for r in res:
-                if 'value' in r:
-                    topic = "bosch/" + gateway.device_model + "-" + gateway.uuid + r.get("id")
-                    _LOGGER.info("Publishing %s", topic)
-                    client.publish(topic=topic, payload=r.get("value"))
-
-    client.disconnect()
+    try:
+        for res in result:
+            if type(res) == list:
+                for r in res:
+                    if 'value' in r:
+                        topic = "bosch/" + gateway.device_model + "-" + gateway.uuid + r.get("id")
+                        _LOGGER.info("Publishing %s", topic)
+                        client.publish(topic=topic, payload=r.get("value"))
+    finally:
+        client.disconnect()
 
 
 async def _scan(gateway, smallscan):
@@ -115,25 +116,55 @@ async def _runquery(gateway, path):
 
     mqtt_publish(gateway, [result])
 
-async def _execute(gateway, fun):
+async def _execute(device, host, token, password, session_type, fun):
     c = click.get_current_context()
     daemon = c.params["daemon"]
     interval = c.params["interval"]
 
-    _LOGGER.debug("Trying to connect to gateway.")
-    connected = await gateway.check_connection()
-    if connected:
-        _LOGGER.info("Successfully connected to gateway. Found UUID: %s", gateway.uuid)
-        if daemon:
-            _LOGGER.info("Executing as daemon, interval is %d seconds.", interval)
-            while True:
-                await fun()
-                _LOGGER.info("Sleeping %d seconds...", interval)
-                time.sleep(interval)
+    if daemon:
+        _LOGGER.info("Executing as daemon, interval is %d seconds.", interval)
+    while True:
+        _LOGGER.debug("Trying to connect to gateway.")
+        if device.upper() in (NEFIT, IVT, EASYCONTROL):
+            BoschGateway = bosch.gateway_chooser(device_type=device)
         else:
-            await fun()
-    else:
-        _LOGGER.error("Couldn't connect to gateway!")
+            _LOGGER.error("Wrong device type.")
+            return
+
+        if session_type == XMPP:
+            session = asyncio.get_event_loop()
+        elif session_type == HTTP:
+            session = aiohttp.ClientSession()
+            if device.upper() != IVT:
+                _LOGGER.warn(
+                    "You're using HTTP protocol, but your device probably doesn't support it. Check for mistakes!"
+                )
+        else:
+            _LOGGER.error("Wrong protocol for this device")
+            return
+
+        gateway = BoschGateway(
+            session=session,
+            session_type=session_type,
+            host=host,
+            access_token=token,
+            password=password,
+        )
+
+        try:
+            connected = await gateway.check_connection()
+            if connected:
+                _LOGGER.info("Successfully connected to gateway. Found UUID: %s", gateway.uuid)
+                await fun(gateway)
+            else:
+                _LOGGER.error("Couldn't connect to gateway!")
+        finally:
+            await gateway.close(force=True)
+            _LOGGER.info("Disconnected from gateway")
+        if not daemon:
+            break;
+        _LOGGER.info("Sleeping %d seconds...", interval)
+        time.sleep(interval)
 
 def coro(f):
     @wraps(f)
@@ -306,35 +337,8 @@ async def scan(
         logging.getLogger("aiosasl").setLevel(logging.WARN)
         logging.getLogger("asyncio").setLevel(logging.WARN)
 
-    if device.upper() in (NEFIT, IVT, EASYCONTROL):
-        BoschGateway = bosch.gateway_chooser(device_type=device)
-    else:
-        _LOGGER.error("Wrong device type.")
-        return
     session_type = protocol.upper()
-    if session_type == XMPP:
-        session = asyncio.get_event_loop()
-    elif session_type == HTTP:
-        session = aiohttp.ClientSession()
-        if device.upper() != IVT:
-            _LOGGER.warn(
-                "You're using HTTP protocol, but your device probably doesn't support it. Check for mistakes!"
-            )
-    else:
-        _LOGGER.error("Wrong protocol for this device")
-        return
-    try:
-        gateway = BoschGateway(
-            session=session,
-            session_type=session_type,
-            host=host,
-            access_token=token,
-            password=password,
-        )
-
-        await _execute(gateway, lambda: _scan(gateway, smallscan))
-    finally:
-        await gateway.close(force=True)
+    await _execute(device, host, token, password, session_type, lambda gateway: _scan(gateway, smallscan))
 
 
 _path_options = [
@@ -387,36 +391,9 @@ async def query(
         logging.getLogger("aioopenssl").setLevel(logging.WARN)
         logging.getLogger("aiosasl").setLevel(logging.WARN)
         logging.getLogger("asyncio").setLevel(logging.WARN)
-    if device.upper() in (NEFIT, IVT, EASYCONTROL):
-        BoschGateway = bosch.gateway_chooser(device_type=device)
-    else:
-        _LOGGER.error("Wrong device type.")
-        return
-    session_type = protocol.upper()
-    _LOGGER.info("Connecting to %s with '%s'", host, session_type)
-    if session_type == XMPP:
-        session = asyncio.get_event_loop()
-    elif session_type == HTTP:
-        session = aiohttp.ClientSession()
-        if device.upper() != IVT:
-            _LOGGER.warn(
-                "You're using HTTP protocol, but your device probably doesn't support it. Check for mistakes!"
-            )
-    else:
-        _LOGGER.error("Wrong protocol for this device")
-        return
-    try:
-        gateway = BoschGateway(
-            session=session,
-            session_type=session_type,
-            host=host,
-            access_token=token,
-            password=password,
-        )
 
-        await _execute(gateway, lambda: _runquery(gateway, path))
-    finally:
-        await gateway.close(force=True)
+    session_type = protocol.upper()
+    await _execute(device, host, token, password, session_type, lambda gateway: _runquery(gateway, path))
 
 
 if __name__ == "__main__":
