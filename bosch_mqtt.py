@@ -397,4 +397,9 @@ async def query(
 
 
 if __name__ == "__main__":
-    asyncio.get_event_loop().run_until_complete(cli())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(cli())
+    except KeyboardInterrupt:
+        pass
